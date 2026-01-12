@@ -68,10 +68,12 @@ class AmzSear(object):
             html_element = [html_module.fromstring(h) for h in html]
         if html_element is not None:
             html_element = get_iter(html_element)
+            products = []
             for html_el in html_element:
-                products = html_el.cssselect('div[data-asin][data-component-type="s-search-result"]')
-                products = [x for x in products if x.cssselect('h2')]
-                products = [AmzProduct(elem, region=region) for elem in products]
+                page_products = html_el.cssselect('div[data-asin][data-component-type="s-search-result"]')
+                page_products = [x for x in page_products if x.cssselect('h2')]
+                page_products = [AmzProduct(elem, region=region) for elem in page_products]
+                products.extend(page_products)
         if products is not None:
             products = get_iter(products)
             products = [prod for prod in products if prod.is_valid() and prod._index]
