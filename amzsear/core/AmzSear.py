@@ -1,14 +1,13 @@
 from lxml import html as html_module
 from lxml.html import clean
-from urllib import request
 
 try:
-    from amzsear.core import build_url
-    from amzsear.core.consts import URL_ADDONS, SEARCH_URL, DEFAULT_REGION
+    from amzsear.core import build_url, fetch_html
+    from amzsear.core.consts import DEFAULT_REGION
     from amzsear.core.AmzProduct import AmzProduct
 except ImportError:
-    from . import build_url
-    from .consts import URL_ADDONS, SEARCH_URL, DEFAULT_REGION
+    from . import build_url, fetch_html
+    from .consts import DEFAULT_REGION
     from .AmzProduct import AmzProduct
 
 """
@@ -74,17 +73,11 @@ class AmzSear(object):
         if url != None:
             url = get_iter(url)
             self._urls = url
-            html = []
+            html_element = []
             for u in url:
-                req = request.Request(
-                    build_url(u),
-                    headers={
-                        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:128.0) Gecko/20100101 Firefox/128.0",
-                        "Accept-Language": "en-US,en;q=0.9",
-                        "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
-                    }
-                )
-                html.append(request.urlopen(req).read())
+                elem = fetch_html(build_url(u))
+                if elem is not None:
+                    html_element.append(elem)
         if html != None:
             html = get_iter(html)
             html_element = [html_module.fromstring(h) for h in html]

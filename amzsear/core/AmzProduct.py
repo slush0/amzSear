@@ -1,23 +1,21 @@
 import re
-from urllib import request
-from lxml import html as html_module
 
 try:
     from amzsear.core.AmzBase import AmzBase
-    from amzsear.core import requires_valid_data, capture_exception, build_url, build_base_url
+    from amzsear.core import requires_valid_data, capture_exception, build_url, build_base_url, fetch_html
     from amzsear.core.AmzRating import AmzRating
     from amzsear.core.AmzProductDetails import AmzProductDetails
     from amzsear.core.AmzReviews import AmzReviews
     from amzsear.core.selectors import DetailLevel
-    from amzsear.core.consts import PRODUCT_URL, REVIEWS_URL, QA_URL, DETAIL_HEADERS, DEFAULT_REGION
+    from amzsear.core.consts import PRODUCT_URL, REVIEWS_URL, QA_URL, DEFAULT_REGION
 except ImportError:
     from .AmzBase import AmzBase
-    from . import requires_valid_data, capture_exception, build_url, build_base_url
+    from . import requires_valid_data, capture_exception, build_url, build_base_url, fetch_html
     from .AmzRating import AmzRating
     from .AmzProductDetails import AmzProductDetails
     from .AmzReviews import AmzReviews
     from .selectors import DetailLevel
-    from .consts import PRODUCT_URL, REVIEWS_URL, QA_URL, DETAIL_HEADERS, DEFAULT_REGION
+    from .consts import PRODUCT_URL, REVIEWS_URL, QA_URL, DEFAULT_REGION
 """
     The AmzProduct class extends the AmzBase class and, as such the following
     attributes are available to be called as an index call or as an attribute:
@@ -145,24 +143,6 @@ class AmzProduct(AmzBase):
             result = result.group(1)
         return result
 
-    def _fetch_html(self, url):
-        """
-        Fetch HTML content from a URL.
-
-        Args:
-            url: The URL to fetch
-
-        Returns:
-            lxml HTML element or None on failure
-        """
-        try:
-            req = request.Request(url, headers=DETAIL_HEADERS)
-            response = request.urlopen(req)
-            html_content = response.read()
-            return html_module.fromstring(html_content)
-        except Exception:
-            return None
-
     def fetch_details(self, level=None, region=None):
         """
         Fetch detailed product information from Amazon.
@@ -201,14 +181,14 @@ class AmzProduct(AmzBase):
         # Level 1: Fetch product page details
         if level.value >= DetailLevel.BASIC.value:
             product_url = PRODUCT_URL % (base_url, asin)
-            html_elem = self._fetch_html(product_url)
+            html_elem = fetch_html(product_url)
             if html_elem is not None:
                 self.details = AmzProductDetails(html_elem)
 
         # Level 2: Fetch reviews page
         if level.value >= DetailLevel.REVIEWS.value:
             reviews_url = REVIEWS_URL % (base_url, asin)
-            html_elem = self._fetch_html(reviews_url)
+            html_elem = fetch_html(reviews_url)
             if html_elem is not None:
                 self.reviews = AmzReviews(html_elem)
 

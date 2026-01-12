@@ -1,11 +1,12 @@
-from urllib import parse
+from urllib import parse, request
+from lxml import html as html_module
 
 try:
     from amzsear.core.consts import (QUERY_BUILD_DICT, BASE_URL, DEFAULT_REGION,
-        REGION_CODES, SEARCH_URL)
+        REGION_CODES, SEARCH_URL, REQUEST_HEADERS)
 except ImportError:
-    from .amzsear.core.consts import (QUERY_BUILD_DICT, BASE_URL, DEFAULT_REGION,
-        REGION_CODES, SEARCH_URL)
+    from .consts import (QUERY_BUILD_DICT, BASE_URL, DEFAULT_REGION,
+        REGION_CODES, SEARCH_URL, REQUEST_HEADERS)
 
 
 """
@@ -68,3 +69,22 @@ def build_base_url(region=DEFAULT_REGION):
         raise ValueError('%s is not a know Amazon region' % (repr(region)))
 
     return BASE_URL + REGION_CODES[find_region]
+
+
+"""
+    Fetches HTML content from a URL and returns parsed lxml element.
+
+    Args:
+        url: The URL to fetch
+
+    Returns:
+        lxml HTML element or None on failure
+"""
+def fetch_html(url):
+    try:
+        req = request.Request(url, headers=REQUEST_HEADERS)
+        response = request.urlopen(req)
+        html_content = response.read()
+        return html_module.fromstring(html_content)
+    except Exception:
+        return None
