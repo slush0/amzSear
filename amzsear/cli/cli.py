@@ -30,29 +30,33 @@ def run(*passed_args):
         parser.error('query is required (or use --product ASIN)')
 
     # Handle search mode
-    amz_args = {x:y for x,y in args.items() if x not in ['item','output','dont_open','product']}
+    amz_args = {x:y for x,y in args.items() if x not in ['item','output','browser','product']}
     out = AmzSear(**amz_args)
 
     if args['item'] != None:
-        # single item selection
-        prod = out[args['item']]
-        out = AmzSear(products=[prod]) # error raised if not found
+        # single item selection - accept ASIN or numeric index
+        item_key = args['item']
+        if item_key.isdigit():
+            # Numeric index - get by position
+            prod = out.rget(int(item_key), raise_error=True)
+        else:
+            # ASIN - get by key
+            prod = out[item_key]
+        out = AmzSear(products=[prod])
         out._urls = [prod.product_url]
-
 
     # handle output types
     if args['output'] == 'short':
         print_short(out)
-    if args['output'] == 'verbose':
+    elif args['output'] == 'verbose':
         print_verbose(out)
     elif args['output'] == 'csv':
         print_csv(out)
     elif args['output'] == 'json':
         print_json(out)
-    # elif args['output'] == 'quite' --> no output
+    # elif args['output'] == 'quiet' --> no output
 
-
-    if args['dont_open'] != True:
+    if args['browser']:
         for url in out._urls:
             webbrowser.open(url)
 
@@ -83,7 +87,7 @@ def run_product(args):
         print_product_json(product)
     # elif args['output'] == 'quiet' --> no output
 
-    if args['dont_open'] != True:
+    if args['browser']:
         webbrowser.open(product.product_url)
 
 
@@ -98,12 +102,12 @@ def get_parser():
     parser.add_argument('-p','--page', type=int,
         help='The page number to be searched (defaults to 1)', default=1)
     parser.add_argument('-i','--item', type=str,
-        help='The item index to be displayed (relative to the page)', default=None)
+        help='Select item by ASIN or numeric index (0-based position)', default=None)
     parser.add_argument('-r','--region', type=str, choices=REGION_CODES,
         default=DEFAULT_REGION, help='The amazon country/region to be searched')
 
-    parser.add_argument('-d','--dont-open', action='store_true',
-        help='Stop the page from opening in the default browser')
+    parser.add_argument('-b','--browser', action='store_true',
+        help='Open the product page in the default browser')
 
     parser.add_argument('-o','--output', type=str, choices=['short','verbose','quiet','csv','json'],
         default='short', help='The output type to be displayed (defaults to short)')
@@ -112,11 +116,11 @@ def get_parser():
 
 
 def print_csv(cls):
-    # flattens to list of dicts with index value
-    data = [{**v.to_dict(flatten=True),**({'_index' : k})} for k,v in cls.items()]
+    # flattens to list of dicts with ASIN first
+    data = [{'asin': k, **v.to_dict(flatten=True)} for k,v in cls.items()]
 
     # print with all quotes
-    writer = csv.DictWriter(sys.stdout, data[0].keys(), quoting=csv.QUOTE_ALL) 
+    writer = csv.DictWriter(sys.stdout, data[0].keys(), quoting=csv.QUOTE_ALL)
     writer.writeheader()
     writer.writerows(data)
 

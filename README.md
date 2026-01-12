@@ -13,27 +13,18 @@ $ amzsear 'Harry Potter Books'
 
 
 ```
-    Title                                               Prices             Rating
-0   Harry Potter Paperback Box Set (Books 1-7)          $21.20 - $52.99    *****
-1   Harry Potter and the Sorcerer's Stone               $0.00 - $10.99     *****
-2   Harry Potter And The Chamber Of Secrets             $0.00 - $10.99     *****
-3   Harry Potter And The Goblet Of Fire                 $0.00 - $12.99     *****
-4   Harry Potter and the Prisoner of Azkaban            $0.00 - $10.99     *****
-5   Harry Potter And The Order Of The Phoenix           $0.00 - $12.99     *****
-6   Harry Potter and the Deathly Hallows (Book 7)       $0.00 - $14.99     *****
-7   Harry Potter and the Half-Blood Prince (Book 6)     $0.00 - $12.99     *****
-8   [Sponsored]Hudson James & the Baker Street Legacy   $0.00 - $3.07      -----
-9   [Sponsored]Kids' Travel Guide - London: The fun wa  $8.37 - $10.90     *****
-10  Harry Potter and the Sorcerer's Stone: The Illustr  $9.23 - $39.99     ****
-11  Harry Potter Complete Book Series Special Edition   $64.88 - $81.95    *****
-12  Harry Potter and the Cursed Child, Parts One and T  $3.15 - $12.99     ****
-13  Harry Potter Books Set #1-7 in Collectible Trunk-L  $73.96 - $157.95   ****
-14  Harry Potter Complete Collection 7 Books Set Colle  $146.89 - $163.99  *****
-15  Harry Potter and the Chamber of Secrets: The Illus  $20.51 - $39.99    *****
-16  Harry Potter and the Prisoner of Azkaban: The Illu  $15.92 - $275.00   *****
-17  The Unofficial Harry Potter Spellbook: Wizard Trai  $0.00 - $13.95     ****
-18  [Sponsored]Widdershins – Part One: The Boy with Ab  $0.00 - $0.76      *****
-19  [Sponsored]Missions Accomplished: And some funny b  $0.00 - $3.96      *****
+ASIN        Title                                               Prices             Rating
+B01CUKZNM2  Harry Potter Paperback Box Set (Books 1-7)          $21.20 - $52.99    *****
+B00728DYLA  Harry Potter and the Sorcerer's Stone               $0.00 - $10.99     *****
+B00728DYLY  Harry Potter And The Chamber Of Secrets             $0.00 - $10.99     *****
+B00728E75S  Harry Potter And The Goblet Of Fire                 $0.00 - $12.99     *****
+B00728DYCU  Harry Potter and the Prisoner of Azkaban            $0.00 - $10.99     *****
+B00728E6Z4  Harry Potter And The Order Of The Phoenix           $0.00 - $12.99     *****
+B00728DYPE  Harry Potter and the Deathly Hallows (Book 7)       $0.00 - $14.99     *****
+B00728E6G8  Harry Potter and the Half-Blood Prince (Book 6)     $0.00 - $12.99     *****
+B01LTHVLSC  Harry Potter and the Sorcerer's Stone: The Illustr  $9.23 - $39.99     ****
+B01LTHXA3C  Harry Potter Complete Book Series Special Edition   $64.88 - $81.95    *****
+B01ELVJPJW  Harry Potter and the Cursed Child, Parts One and T  $3.15 - $12.99     ****
 ```
 
 ![Amazon Comparison Shot](amazon_screenshot.png)
@@ -72,20 +63,20 @@ The amzSear CLI allows Amazon search queries to be performed directly from the c
 $ amzsear 'Harry Potter Books'
 ```
 
-However, additional options can be set to select the page number, item number, region or the output format. For example:
+However, additional options can be set to select the page number, item, region or the output format. For example:
 
 ```
-$ amzsear 'Harry Potter' -p 2 -i 35 --output json
+$ amzsear 'Harry Potter' -p 2 -i B00728DYLA --output json
 ```
 
-The above query will display the item at index 35 on page 2 as a JSON object.
+The above query will display the item with ASIN B00728DYLA on page 2 as a JSON object. The `-i` flag accepts both ASIN and numeric index (0-based position).
 
 #### Product Lookup by ASIN
 
 You can also fetch detailed product information directly by ASIN using the `-P/--product` flag:
 
 ```
-$ amzsear -P B00006IFHD -d
+$ amzsear -P B00006IFHD
 ```
 
 ```
@@ -104,6 +95,12 @@ Technical details (21 fields)
 ```
 
 This fetches the product page and extracts detailed information including brand, full title, bullet points, technical specifications, and review statistics. All output formats (short, verbose, json, csv) are supported.
+
+Use `-b/--browser` to open the product page in your default browser:
+
+```
+$ amzsear -P B00006IFHD -b
+```
 
 For more examples and for extended usage information see the [CLI Readme](docs/cli/README.md).
 

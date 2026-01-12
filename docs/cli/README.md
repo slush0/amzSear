@@ -14,21 +14,22 @@ $ amzsear 'Harry Potter Books'
 The extended amzSear usage can be seen by typing `amzsear` without any additional arguments.
 
 ```
-usage: amzsear [-h] [-p PAGE] [-i ITEM]
-               [-r {AU,BR,CA,CN,DE,ES,FR,IN,IT,JP,MX,NL,SG,UK,US}] [-d]
+usage: amzsear [-h] [-P ASIN] [-p PAGE] [-i ITEM]
+               [-r {AU,BR,CA,CN,DE,ES,FR,IN,IT,JP,MX,NL,SG,UK,US}] [-b]
                [-o {short,verbose,quiet,csv,json}]
-               query
+               [query]
 ```
 
 ###### Args
 *query*: The query string to search Amazon.
 
 ###### Optional Args
-*-h, --help*: Display extended help & usage information.  
-*-p NUM, --page NUM*: The page number to be searched (defaults to 1).  
-*-i NUM, --item NUM*: The item index to be displayed (relative to the page). If no item is specified, the entire page's products will be displayed.  
-*-r STR, --region STR*: The amazon country/region to be searched (defaults to. For a list of countries to country code see the [region table](../regions.md).  
-*-d, --dont-open*: Stop the page from opening in the default browser.  
+*-h, --help*: Display extended help & usage information.
+*-P ASIN, --product ASIN*: Fetch product details by ASIN instead of searching.
+*-p NUM, --page NUM*: The page number to be searched (defaults to 1).
+*-i ITEM, --item ITEM*: Select item by ASIN or numeric index (0-based position). If no item is specified, the entire page's products will be displayed.
+*-r STR, --region STR*: The amazon country/region to be searched (defaults to US). For a list of countries to country code see the [region table](../regions.md).
+*-b, --browser*: Open the product page in the default browser.
 *-o STR, --output STR*: The output type to be displayed (defaults to short). Output types are as follows:
 * *short*: A concise view of the title, price summary and rating.
 * *verbose*: The complete amzSear representation taken from the core api representation.
@@ -74,13 +75,13 @@ In the above example, the first page of results for the query `Harry Potter` wil
 
 ###### Example 2
 ```
-$ amzsear 'Harry Potter' -i 20
+$ amzsear 'Harry Potter' -i 0
 
 	OR
 
-$ amzsear 'Harry Potter' --item 20
+$ amzsear 'Harry Potter' -i B00728DYLA
 ```
-This example will display the item at index 20 of page 1 (as page 1 is the default). If the index could not be found on page 1 an empty result will appear.
+This example will display the first item (index 0) or the item with ASIN B00728DYLA. The `-i` flag accepts both numeric index (0-based) and ASIN.
 
 ###### Example 3
 ```
@@ -94,13 +95,13 @@ Example 3 will display all results from the `Harry Potter` searching the Spanish
 
 ###### Example 4
 ```
-$ amzsear 'Harry Potter' -d
+$ amzsear 'Harry Potter' -b
 
 	OR
-    
-$ amzsear 'Harry Potter' --dont-open
+
+$ amzsear 'Harry Potter' --browser
 ```
-This example will produce the same output as it would without the `-d` option, however the page will not be opened in the default browser.
+This example will display the search results and open the product pages in the default browser. By default, the browser is not opened.
 
 ###### Example 5
 ```
@@ -114,9 +115,15 @@ In this example a csv of all products from the first page of search results is p
 
 ###### Example 6
 ```
-$ amzsear 'Harry Potter' -p 2 -i 35 --output json
+$ amzsear 'Harry Potter' -p 2 -i B00728DYLA --output json
 ```
-In this final example a JSON object of the item at index 35 on page 2 is displayed.
+In this example a JSON object of the item with ASIN B00728DYLA on page 2 is displayed.
+
+###### Example 7
+```
+$ amzsear -P B00006IFHD
+```
+This example fetches detailed product information directly by ASIN, bypassing search. Returns brand, title, specs, bullet points, and review statistics.
 
 
 
