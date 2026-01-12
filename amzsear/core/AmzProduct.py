@@ -61,6 +61,8 @@ class AmzProduct(AmzBase):
                 setattr(self, k, v)
             if len(html_dict) > 0:
                 self._is_valid = True
+                # Set _index to ASIN for use as key in AmzSear collection
+                self._index = self.get_asin()
 
     """
         Private method - used in to initialise fields from HTML
@@ -101,8 +103,8 @@ class AmzProduct(AmzBase):
         extras = [re.sub('\s+',' ', x.text_content().strip()) for x in extras]
         d['extra_attributes'] = dict(list(zip(extras,extras[1:]))[::2])
 
-        # _index is not used explicitly in _all_attrs but can be referenced elsewhere
-        d['_index'] = root.get('id','').split('_')[-1]
+        # _index is the ASIN, used as key in AmzSear collection
+        d['_index'] = None  # Will be set from product_url after extraction
 
         # clean up before returning
         return dict(map(lambda k: (k, d[k].strip() if isinstance(d[k],str) else d[k]), d)) 

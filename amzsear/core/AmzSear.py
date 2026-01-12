@@ -89,13 +89,16 @@ class AmzSear(object):
                 products = [AmzProduct(elem) for elem in products]
         if products != None:
             products = get_iter(products)
-            products = [prod for prod in products if prod.is_valid()]
-            self._products += products
-            self._indexes += [prod._index for prod in products]
+            products = [prod for prod in products if prod.is_valid() and prod._index]
+            # Deduplicate by ASIN - keep first occurrence only
+            for prod in products:
+                if prod._index not in self._indexes:
+                    self._products.append(prod)
+                    self._indexes.append(prod._index)
 
     def __repr__(self):
         out = []
-        max_index_len = 10
+        max_index_len = 12  # ASIN is 10 chars + padding
         for index, product in self.items():
             temp_repr = repr(index) + ':' + max_index_len*' '
             temp_repr = temp_repr[:max_index_len] + repr(product)

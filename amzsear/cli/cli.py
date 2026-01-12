@@ -128,13 +128,13 @@ def print_verbose(cls):
 
 
 def print_short(cls):
-    fields = ['','Title','Prices','Rating']
+    fields = ['ASIN','Title','Prices','Rating']
 
     rows = [{f:f for f in fields}]
     for index, product in cls.items():
         temp_dict = {}
 
-        temp_dict[''] = index
+        temp_dict['ASIN'] = product.get_asin() or index[:10]
 
         # get price in format '$nn.nn-$mm.mm'
         price_tup = {product.prices[k]:product.get_prices(k) for k in product.prices}
