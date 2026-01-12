@@ -1,6 +1,6 @@
 """amzSear - The unofficial Amazon search CLI & Python API."""
 
-__version__ = '2.0.2'
+__version__ = '3.0.0'
 
 try:
     from amzsear.core.AmzSear import AmzSear
