@@ -66,7 +66,7 @@ $ amzsear 'Harry Potter Books'
 However, additional options can be set to select the page number, item, region or the output format. For example:
 
 ```
-$ amzsear 'Harry Potter' -p 2 -s B00728DYLA --output json
+$ amzsear 'Harry Potter' -p 2 -s B00728DYLA -j
 ```
 
 The above query will display the item with ASIN B00728DYLA on page 2 as a JSON object. The `-s` flag accepts both ASIN and numeric index (0-based position).
@@ -94,7 +94,7 @@ About this item (7 points):
 Technical details (21 fields)
 ```
 
-This fetches the product page and extracts detailed information including brand, full title, bullet points, technical specifications, and review statistics. All output formats (short, verbose, json, csv) are supported.
+This fetches the product page and extracts detailed information including brand, full title, bullet points, technical specifications, and review statistics. Use `-v` for verbose output or `-j` for JSON format.
 
 Use `-b/--browser` to open the product page in your default browser:
 
@@ -144,7 +144,7 @@ For a complete explanation of the intricacies of the amzSear core API, see the [
 | Feature                                                        | v 1.0 | v 2.0 |
 |----------------------------------------------------------------|-------|-------|
 | Command line Amazon queries                                    | ✓     | ✓     |
-| Command line conversion to CSV or JSON                         |       | ✓     |
+| Command line conversion to JSON                                |       | ✓     |
 | Product lookup by ASIN with detailed info                      |       | ✓     |
 | Support for US Amazon                                          | ✓     | ✓     |
 | Support across __all__ Amazon regions                          |       | ✓     |
@@ -164,7 +164,7 @@ For a complete explanation of the intricacies of the amzSear core API, see the [
 * Additional fields - including image_url, subtitle/subtext, rating's count
 * Product lookup by ASIN - fetch detailed product info (brand, specs, bullet points, reviews)
 * Simpler usability and clearer command line interface
-* Multiple command line export formats - CSV, JSON, etc.
+* JSON export format for programmatic use
 
 A more in depth understanding of the latest features of the CLI can be explored in the [CLI Readme](docs/cli/README.md). A complete breakdown of the core API's extended features can be seen in the core [API docs](docs/core/).
 

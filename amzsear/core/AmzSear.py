@@ -86,7 +86,7 @@ class AmzSear(object):
             for html_el in html_element:
                 products = html_el.cssselect('div[data-asin][data-component-type="s-search-result"]')
                 products = [x for x in products if x.cssselect('h2')]
-                products = [AmzProduct(elem) for elem in products]
+                products = [AmzProduct(elem, region=region) for elem in products]
         if products != None:
             products = get_iter(products)
             products = [prod for prod in products if prod.is_valid() and prod._index]

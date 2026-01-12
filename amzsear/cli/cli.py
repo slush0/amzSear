@@ -11,7 +11,6 @@ import argparse
 import webbrowser
 import json
 import sys
-import csv
 
 """
 """
@@ -30,7 +29,7 @@ def run(*passed_args):
         parser.error('query is required (or use --asin ASIN)')
 
     # Handle search mode
-    amz_args = {x:y for x,y in args.items() if x not in ['select','output','browser','asin']}
+    amz_args = {x:y for x,y in args.items() if x not in ['select','verbose','json','browser','asin']}
     out = AmzSear(**amz_args)
 
     if args['select'] != None:
@@ -45,16 +44,13 @@ def run(*passed_args):
         out = AmzSear(products=[prod])
         out._urls = [prod.product_url]
 
-    # handle output types
-    if args['output'] == 'short':
-        print_short(out)
-    elif args['output'] == 'verbose':
+    # handle output
+    if args['json']:
+        print_json(out, verbose=args['verbose'])
+    elif args['verbose']:
         print_verbose(out)
-    elif args['output'] == 'csv':
-        print_csv(out)
-    elif args['output'] == 'json':
-        print_json(out)
-    # elif args['output'] == 'quiet' --> no output
+    else:
+        print_short(out)
 
     if args['browser']:
         for url in out._urls:
@@ -76,16 +72,13 @@ def run_product(args):
     # Fetch BASIC level details
     product.fetch_details(level=DetailLevel.BASIC, region=region)
 
-    # Handle output types
-    if args['output'] == 'short':
-        print_product_short(product)
-    elif args['output'] == 'verbose':
+    # Handle output
+    if args['json']:
+        print_product_json(product, verbose=args['verbose'])
+    elif args['verbose']:
         print_product_verbose(product)
-    elif args['output'] == 'csv':
-        print_product_csv(product)
-    elif args['output'] == 'json':
-        print_product_json(product)
-    # elif args['output'] == 'quiet' --> no output
+    else:
+        print_product_short(product)
 
     if args['browser']:
         webbrowser.open(product.product_url)
@@ -109,26 +102,51 @@ def get_parser():
     parser.add_argument('-b','--browser', action='store_true',
         help='Open the product page in the default browser')
 
-    parser.add_argument('-o','--output', type=str, choices=['short','verbose','quiet','csv','json'],
-        default='short', help='The output type to be displayed (defaults to short)')
+    parser.add_argument('-v','--verbose', action='store_true',
+        help='Show full product details instead of summary')
+    parser.add_argument('-j','--json', action='store_true',
+        help='Output in JSON format')
 
     return parser
 
 
-def print_csv(cls):
-    # flattens to list of dicts with ASIN first
-    data = [{'asin': k, **v.to_dict(flatten=True)} for k,v in cls.items()]
-
-    # print with all quotes
-    writer = csv.DictWriter(sys.stdout, data[0].keys(), quoting=csv.QUOTE_ALL)
-    writer.writeheader()
-    writer.writerows(data)
-
-def print_json(cls):
-    print(json.dumps({k: v.to_dict() for k,v in cls.items()}))
+def print_json(cls, verbose=False):
+    """Print JSON output. Verbose includes all fields, short includes summary only."""
+    if verbose:
+        print(json.dumps({k: v.to_dict() for k,v in cls.items()}, indent=2))
+    else:
+        # Short JSON - just essential fields
+        data = {}
+        for asin, product in cls.items():
+            data[asin] = {
+                'title': product.get('title'),
+                'prices': product.get('prices'),
+                'rating': product.rating.to_dict() if product.rating else None,
+                'product_url': product.product_url
+            }
+        print(json.dumps(data, indent=2))
 
 def print_verbose(cls):
-    print(cls)
+    """Print full verbose output without truncation."""
+    for asin, product in cls.items():
+        print(f"ASIN: {asin}")
+        for key, value in product.items():
+            if hasattr(value, 'items'):
+                # Nested object (like rating) - print its attributes
+                print(f"    {key}:")
+                for sub_key, sub_value in value.items():
+                    print(f"        {sub_key}: {sub_value}")
+            elif isinstance(value, dict):
+                print(f"    {key}:")
+                for dict_key, dict_value in value.items():
+                    print(f"        {dict_key}: {dict_value}")
+            elif isinstance(value, list):
+                print(f"    {key}:")
+                for item in value:
+                    print(f"        - {item}")
+            else:
+                print(f"    {key}: {value}")
+        print()
 
 
 def print_short(cls):
@@ -169,44 +187,43 @@ def print_short(cls):
 
 
 # Product output formatters
-def print_product_json(product):
+def print_product_json(product, verbose=False):
     """Output product details as JSON."""
-    data = {'asin': product.get_asin()}
-    data['product_url'] = product.product_url
+    data = {'asin': product.get_asin(), 'product_url': product.product_url}
 
     if product.details:
-        data['details'] = product.details.to_dict()
+        if verbose:
+            data['details'] = product.details.to_dict()
+        else:
+            # Short - just essential fields
+            details = product.details
+            data['title'] = details.full_title
+            data['brand'] = details.brand
+            data['rating'] = details.average_rating
+            data['review_count'] = details.review_count
 
     print(json.dumps(data, indent=2))
 
 
-def print_product_csv(product):
-    """Output product details as CSV."""
-    data = {'asin': product.get_asin(), 'product_url': product.product_url}
-
-    if product.details:
-        details_dict = product.details.to_dict(flatten=True)
-        # Flatten lists to strings for CSV
-        for k, v in details_dict.items():
-            if isinstance(v, list):
-                details_dict[k] = '; '.join(str(x) for x in v)
-            elif isinstance(v, dict):
-                details_dict[k] = json.dumps(v)
-        data.update(details_dict)
-
-    writer = csv.DictWriter(sys.stdout, data.keys(), quoting=csv.QUOTE_ALL)
-    writer.writeheader()
-    writer.writerows([data])
-
-
 def print_product_verbose(product):
-    """Output full product details."""
+    """Output full product details without truncation."""
     print(f"ASIN: {product.get_asin()}")
-    print(f"URL:  {product.product_url}")
+    print(f"URL: {product.product_url}")
     print()
 
     if product.details:
-        print(product.details)
+        details = product.details
+        for key, value in details.items():
+            if isinstance(value, dict):
+                print(f"{key}:")
+                for dict_key, dict_value in value.items():
+                    print(f"    {dict_key}: {dict_value}")
+            elif isinstance(value, list):
+                print(f"{key}:")
+                for item in value:
+                    print(f"    - {item}")
+            else:
+                print(f"{key}: {value}")
     else:
         print("No details available")
 

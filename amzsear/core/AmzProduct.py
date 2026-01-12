@@ -49,12 +49,12 @@ class AmzProduct(AmzBase):
     subtext = None
     details = None  # AmzProductDetails object (populated by fetch_details)
     reviews = None  # AmzReviews object (populated by fetch_details)
-    _region = DEFAULT_REGION  # Region for URL building
 
     _all_attrs = ['title','product_url','image_url','rating','prices',
         'extra_attributes', 'subtext', 'details', 'reviews']
 
-    def __init__(self, html_element=None):
+    def __init__(self, html_element=None, region=DEFAULT_REGION):
+        self._region = region
         if html_element != None:
             html_dict = self._get_from_html(html_element)
             for k,v in html_dict.items():
@@ -76,7 +76,7 @@ class AmzProduct(AmzBase):
 
         title_root = [x for x in root.cssselect('a') if len(x.cssselect('h2')) > 0][0]
         d['title'] = ''.join([x.text_content() for x in title_root.cssselect('h2')])
-        d['product_url'] = build_url(title_root.get('href'))
+        d['product_url'] = build_url(title_root.get('href'), region=self._region)
         for elem in title_root.getparent().getparent().cssselect('div[class="a-row a-spacing-none"]'):
             temp_subtext = ''.join([x.text_content() for x in elem.cssselect('span[class*="a-size-small"]')])
             if len(temp_subtext) > 0:

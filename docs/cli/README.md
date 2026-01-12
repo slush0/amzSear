@@ -16,7 +16,7 @@ The extended amzSear usage can be seen by typing `amzsear` without any additiona
 ```
 usage: amzsear [-h] [-a ASIN] [-p PAGE] [-s SELECT]
                [-r {AU,AE,BR,CA,CN,DE,ES,FR,IN,IT,JP,MX,NL,SG,UK,US}] [-b]
-               [-o {short,verbose,quiet,csv,json}]
+               [-v] [-j]
                [query]
 ```
 
@@ -30,35 +30,8 @@ usage: amzsear [-h] [-a ASIN] [-p PAGE] [-s SELECT]
 *-s SELECT, --select SELECT*: Select result by ASIN or numeric index (0-based position). If no selection is specified, the entire page's products will be displayed.
 *-r STR, --region STR*: The amazon country/region to be searched (defaults to US). For a list of countries to country code see the [region table](../regions.md).
 *-b, --browser*: Open the product page in the default browser.
-*-o STR, --output STR*: The output type to be displayed (defaults to short). Output types are as follows:
-* *short*: A concise view of the title, price summary and rating.
-* *verbose*: The complete amzSear representation taken from the core api representation.
-* *quiet*: No output is produced.
-* *csv*: A quoted csv of all products with with all fields flattened, including the index.
-* *json*: A JSON object of all products with all fields with the product's index as the top-level key.
-
-<a name="comparison-to-version-1"></a>
-##### Comparison to Version 1
-
-###### Verbose Argument
-In the previous version of amzSear, a verbose option could be displayed by adding the `-v` argument. However this can now be done through the output argument. For example:
-```
-$ amzsear 'Harry Potter' --output verbose
-
-	OR
-
-$ amzsear 'Harry Potter' -o verbose
-```
-
-###### Quiet Argument
-Similar to the verbose argument, a quiet option could be used in the previous version of amzSear by adding the `-q` argument. However this can now be done through the output argument. For example:
-```
-$ amzsear 'Harry Potter' --output quiet
-
-	OR
-
-$ amzsear 'Harry Potter' -o quiet
-```
+*-v, --verbose*: Show full product details instead of summary.
+*-j, --json*: Output in JSON format. Can be combined with -v for verbose JSON.
 
 <a name="examples"></a>
 ##### Examples
@@ -105,21 +78,11 @@ This example will display the search results and open the product pages in the d
 
 ###### Example 5
 ```
-$ amzsear 'Harry Potter' -o csv > harry_amzsear.csv
-
-	OR
-    
-$ amzsear 'Harry Potter' --output csv > harry_amzsear.csv
-```
-In this example a csv of all products from the first page of search results is produced and then piped into a csv called `harry_amzsear.csv`.
-
-###### Example 6
-```
-$ amzsear 'Harry Potter' -p 2 -s B00728DYLA --output json
+$ amzsear 'Harry Potter' -p 2 -s B00728DYLA -j
 ```
 In this example a JSON object of the result with ASIN B00728DYLA on page 2 is displayed.
 
-###### Example 7
+###### Example 6
 ```
 $ amzsear -a B00006IFHD
 ```
