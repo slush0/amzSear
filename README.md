@@ -78,7 +78,34 @@ However, additional options can be set to select the page number, item number, r
 $ amzsear 'Harry Potter' -p 2 -i 35 --output json
 ```
 
-The above query will display the item at index 35 on page 2 as a JSON object. For more examples and for extended usage information see the [CLI Readme](docs/cli/README.md).
+The above query will display the item at index 35 on page 2 as a JSON object.
+
+#### Product Lookup by ASIN
+
+You can also fetch detailed product information directly by ASIN using the `-P/--product` flag:
+
+```
+$ amzsear -P B00006IFHD -d
+```
+
+```
+ASIN:   B00006IFHD
+Title:  Sharpie Permanent Markers Set Quick Drying And Fade Resistant Fine ...
+Brand:  Sharpie
+Rating: 4.8/5 (43,116 reviews)
+
+About this item (7 points):
+  1. Fine-tipped, Detailed Marks: Versatile fine tip allows users to make eye-catchin...
+  2. Permanent Ink: Makes a resilient mark on paper, plastic, and metal surfaces
+  3. Quick-Drying: Quick-drying feature ensures writing resilience against water and ...
+  ... and 4 more
+
+Technical details (21 fields)
+```
+
+This fetches the product page and extracts detailed information including brand, full title, bullet points, technical specifications, and review statistics. All output formats (short, verbose, json, csv) are supported.
+
+For more examples and for extended usage information see the [CLI Readme](docs/cli/README.md).
 
 
 #### API
@@ -121,6 +148,7 @@ For a complete explanation of the intricacies of the amzSear core API, see the [
 |----------------------------------------------------------------|-------|-------|
 | Command line Amazon queries                                    | ✓     | ✓     |
 | Command line conversion to CSV or JSON                         |       | ✓     |
+| Product lookup by ASIN with detailed info                      |       | ✓     |
 | Support for US Amazon                                          | ✓     | ✓     |
 | Support across __all__ Amazon regions                          |       | ✓     |
 | Single page API queries                                        | ✓     | ✓     |
@@ -137,6 +165,7 @@ For a complete explanation of the intricacies of the amzSear core API, see the [
 * Dedicated AmzSear class & subclasses
 * Better scraping & extraction to retrieve all data
 * Additional fields - including image_url, subtitle/subtext, rating's count
+* Product lookup by ASIN - fetch detailed product info (brand, specs, bullet points, reviews)
 * Simpler usability and clearer command line interface
 * Multiple command line export formats - CSV, JSON, etc.
 
@@ -151,4 +180,4 @@ A more in depth understanding of the latest features of the CLI can be explored 
 * [Linux-OS.net](http://linux-os.net/amzsear-busca-productos-en-amazon-desde-la-linea-de-comandos/)
 * [MasLinux](http://maslinux.es/buscar-productos-de-amazon-desde-la-linea-de-comandos/)
 
-This library was designed to facilitate the use of amazon search on the command line whilst also providing a utility to easily scrape basic product information from Amazon (for those without access to Amazon's Product API). The developer does, however, append an Amazon Affiliate Tag in order to track usage of this software and to monetize this and other publicly accessible projects. We are a participant in the Amazon Services LLC Associates Program, an affiliate advertising program designed to provide a means for us to earn fees by linking to Amazon.com and affiliated sites.
+This library was designed to facilitate the use of Amazon search on the command line whilst also providing a utility to easily scrape basic product information from Amazon (for those without access to Amazon's Product API).

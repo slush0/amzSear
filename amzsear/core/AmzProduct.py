@@ -1,13 +1,23 @@
 import re
+from urllib import request
+from lxml import html as html_module
 
 try:
     from amzsear.core.AmzBase import AmzBase
-    from amzsear.core import requires_valid_data, capture_exception, build_url
+    from amzsear.core import requires_valid_data, capture_exception, build_url, build_base_url
     from amzsear.core.AmzRating import AmzRating
+    from amzsear.core.AmzProductDetails import AmzProductDetails
+    from amzsear.core.AmzReviews import AmzReviews
+    from amzsear.core.selectors import DetailLevel
+    from amzsear.core.consts import PRODUCT_URL, REVIEWS_URL, QA_URL, DETAIL_HEADERS, DEFAULT_REGION
 except ImportError:
-    from .amzsear.core.AmzBase import AmzBase
-    from .amzsear.core import requires_valid_data, capture_exception, build_url
-    from .amzsear.core.AmzRating import AmzRating
+    from .AmzBase import AmzBase
+    from . import requires_valid_data, capture_exception, build_url, build_base_url
+    from .AmzRating import AmzRating
+    from .AmzProductDetails import AmzProductDetails
+    from .AmzReviews import AmzReviews
+    from .selectors import DetailLevel
+    from .consts import PRODUCT_URL, REVIEWS_URL, QA_URL, DETAIL_HEADERS, DEFAULT_REGION
 """
     The AmzProduct class extends the AmzBase class and, as such the following
     attributes are available to be called as an index call or as an attribute:
@@ -37,11 +47,14 @@ class AmzProduct(AmzBase):
     image_url = None
     rating = None
     prices = None
-    extra_attributes = None 
+    extra_attributes = None
     subtext = None
+    details = None  # AmzProductDetails object (populated by fetch_details)
+    reviews = None  # AmzReviews object (populated by fetch_details)
+    _region = DEFAULT_REGION  # Region for URL building
 
     _all_attrs = ['title','product_url','image_url','rating','prices',
-        'extra_attributes', 'subtext']
+        'extra_attributes', 'subtext', 'details', 'reviews']
 
     def __init__(self, html_element=None):
         if html_element != None:
@@ -127,9 +140,83 @@ class AmzProduct(AmzBase):
         return sorted(map(float,prices))
         
     def get_asin(self):
-        result = re.search('(?:/|%2F)dp(?:/|%2F)(B\d[0-9A-Z]{8})', self.product_url)
+        result = re.search('(?:/|%2F)dp(?:/|%2F)([A-Z0-9]{10})', self.product_url)
         if result is not None:
             result = result.group(1)
         return result
+
+    def _fetch_html(self, url):
+        """
+        Fetch HTML content from a URL.
+
+        Args:
+            url: The URL to fetch
+
+        Returns:
+            lxml HTML element or None on failure
+        """
+        try:
+            req = request.Request(url, headers=DETAIL_HEADERS)
+            response = request.urlopen(req)
+            html_content = response.read()
+            return html_module.fromstring(html_content)
+        except Exception:
+            return None
+
+    def fetch_details(self, level=None, region=None):
+        """
+        Fetch detailed product information from Amazon.
+
+        This method makes HTTP requests to Amazon to retrieve additional
+        product information beyond what's available in search results.
+
+        Args:
+            level: DetailLevel enum specifying how much detail to fetch:
+                - DetailLevel.SEARCH (0): No request, use existing data
+                - DetailLevel.BASIC (1): Fetch product page (title, brand, specs, etc.)
+                - DetailLevel.REVIEWS (2): Also fetch reviews page
+                - DetailLevel.FULL (3): Also fetch Q&A page
+            region: Amazon region code (e.g., 'US', 'UK', 'DE'). Defaults to US.
+
+        Returns:
+            self: Returns self for method chaining
+
+        Example:
+            >>> product = search_results.rget(0)
+            >>> product.fetch_details(level=DetailLevel.BASIC)
+            >>> print(product.details.brand)
+        """
+        if level is None:
+            level = DetailLevel.BASIC
+
+        if region is not None:
+            self._region = region
+
+        asin = self.get_asin()
+        if not asin:
+            return self
+
+        base_url = build_base_url(self._region)
+
+        # Level 1: Fetch product page details
+        if level.value >= DetailLevel.BASIC.value:
+            product_url = PRODUCT_URL % (base_url, asin)
+            html_elem = self._fetch_html(product_url)
+            if html_elem is not None:
+                self.details = AmzProductDetails(html_elem)
+
+        # Level 2: Fetch reviews page
+        if level.value >= DetailLevel.REVIEWS.value:
+            reviews_url = REVIEWS_URL % (base_url, asin)
+            html_elem = self._fetch_html(reviews_url)
+            if html_elem is not None:
+                self.reviews = AmzReviews(html_elem)
+
+        # Level 3: Q&A would be fetched here (not implemented yet)
+        # if level.value >= DetailLevel.FULL.value:
+        #     qa_url = QA_URL % (base_url, asin)
+        #     ...
+
+        return self
 
 

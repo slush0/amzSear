@@ -1,3 +1,4 @@
+LICENSE.txt
 MANIFEST.in
 README.md
 requirements.txt
@@ -8,6 +9,7 @@ amzsear.egg-info/PKG-INFO
 amzsear.egg-info/SOURCES.txt
 amzsear.egg-info/dependency_links.txt
 amzsear.egg-info/entry_points.txt
+amzsear.egg-info/requires.txt
 amzsear.egg-info/top_level.txt
 amzsear/cli/__init__.py
 amzsear/cli/cli.py

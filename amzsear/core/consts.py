@@ -27,7 +27,20 @@ BASE_URL = 'https://www.amazon'
 URL_ADDONS = {'headers': {'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_11_3) '
                            'AppleWebKit/537.36 (KHTML, like Gecko) '
                            'Chrome/60.0.3112.113 Safari/537.36'}}
-GAT_ID = 't' + 'ag'
-QUERY_BUILD_DICT = {GAT_ID : 'alhs-20'}
+QUERY_BUILD_DICT = {}
 
-SEARCH_URL = '%s/s/ref=nb_sb_noss?sf=qz&keywords=%s&ie=UTF8&unfiltered=1&page=%s' 
+SEARCH_URL = '%s/s/ref=nb_sb_noss?sf=qz&keywords=%s&ie=UTF8&unfiltered=1&page=%s'
+
+# Product detail page URLs
+PRODUCT_URL = '%s/dp/%s'  # BASE_URL + region, ASIN
+REVIEWS_URL = '%s/product-reviews/%s'  # BASE_URL + region, ASIN
+QA_URL = '%s/ask/questions/asin/%s'  # BASE_URL + region, ASIN
+
+# Request headers for detail fetching (more complete browser-like headers)
+# Note: Don't include Accept-Encoding to get uncompressed response
+DETAIL_HEADERS = {
+    'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:128.0) Gecko/20100101 Firefox/128.0',
+    'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
+    'Accept-Language': 'en-US,en;q=0.9',
+    'Connection': 'keep-alive',
+}

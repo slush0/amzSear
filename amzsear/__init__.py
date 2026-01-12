@@ -1,4 +1,21 @@
 try:
     from amzsear.core.AmzSear import AmzSear
+    from amzsear.core.AmzProduct import AmzProduct
+    from amzsear.core.AmzProductDetails import AmzProductDetails
+    from amzsear.core.AmzReviews import AmzReviews, AmzReview
+    from amzsear.core.selectors import DetailLevel
 except ImportError:
-    from .amzsear.core.AmzSear import AmzSear
+    from .core.AmzSear import AmzSear
+    from .core.AmzProduct import AmzProduct
+    from .core.AmzProductDetails import AmzProductDetails
+    from .core.AmzReviews import AmzReviews, AmzReview
+    from .core.selectors import DetailLevel
+
+__all__ = [
+    'AmzSear',
+    'AmzProduct',
+    'AmzProductDetails',
+    'AmzReviews',
+    'AmzReview',
+    'DetailLevel',
+]
