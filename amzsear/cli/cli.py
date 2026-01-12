@@ -21,21 +21,21 @@ def run(*passed_args):
     args = vars(args)
 
     # Handle product lookup mode
-    if args.get('product'):
+    if args.get('asin'):
         run_product(args)
         return
 
     # Validate: query is required for search mode
     if not args.get('query'):
-        parser.error('query is required (or use --product ASIN)')
+        parser.error('query is required (or use --asin ASIN)')
 
     # Handle search mode
-    amz_args = {x:y for x,y in args.items() if x not in ['item','output','browser','product']}
+    amz_args = {x:y for x,y in args.items() if x not in ['select','output','browser','asin']}
     out = AmzSear(**amz_args)
 
-    if args['item'] != None:
+    if args['select'] != None:
         # single item selection - accept ASIN or numeric index
-        item_key = args['item']
+        item_key = args['select']
         if item_key.isdigit():
             # Numeric index - get by position
             prod = out.rget(int(item_key), raise_error=True)
@@ -63,7 +63,7 @@ def run(*passed_args):
 
 def run_product(args):
     """Handle product lookup by ASIN."""
-    asin = args['product']
+    asin = args['asin']
     region = args.get('region', DEFAULT_REGION)
 
     # Create a minimal AmzProduct with just the product_url set
@@ -97,12 +97,12 @@ def get_parser():
 
     parser.add_argument('query', type=str, nargs='?', default=None,
         help='The query string to be searched')
-    parser.add_argument('-P','--product', type=str, default=None,
+    parser.add_argument('-a','--asin', type=str, default=None,
         help='Fetch product details by ASIN instead of searching')
     parser.add_argument('-p','--page', type=int,
         help='The page number to be searched (defaults to 1)', default=1)
-    parser.add_argument('-i','--item', type=str,
-        help='Select item by ASIN or numeric index (0-based position)', default=None)
+    parser.add_argument('-s','--select', type=str,
+        help='Select result by ASIN or numeric index (0-based position)', default=None)
     parser.add_argument('-r','--region', type=str, choices=REGION_CODES,
         default=DEFAULT_REGION, help='The amazon country/region to be searched')
 

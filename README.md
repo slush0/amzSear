@@ -66,17 +66,17 @@ $ amzsear 'Harry Potter Books'
 However, additional options can be set to select the page number, item, region or the output format. For example:
 
 ```
-$ amzsear 'Harry Potter' -p 2 -i B00728DYLA --output json
+$ amzsear 'Harry Potter' -p 2 -s B00728DYLA --output json
 ```
 
-The above query will display the item with ASIN B00728DYLA on page 2 as a JSON object. The `-i` flag accepts both ASIN and numeric index (0-based position).
+The above query will display the item with ASIN B00728DYLA on page 2 as a JSON object. The `-s` flag accepts both ASIN and numeric index (0-based position).
 
 #### Product Lookup by ASIN
 
-You can also fetch detailed product information directly by ASIN using the `-P/--product` flag:
+You can also fetch detailed product information directly by ASIN using the `-a/--asin` flag:
 
 ```
-$ amzsear -P B00006IFHD
+$ amzsear -a B00006IFHD
 ```
 
 ```
@@ -99,7 +99,7 @@ This fetches the product page and extracts detailed information including brand,
 Use `-b/--browser` to open the product page in your default browser:
 
 ```
-$ amzsear -P B00006IFHD -b
+$ amzsear -a B00006IFHD -b
 ```
 
 For more examples and for extended usage information see the [CLI Readme](docs/cli/README.md).
