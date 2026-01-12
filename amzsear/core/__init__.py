@@ -71,6 +71,11 @@ def build_base_url(region=DEFAULT_REGION):
     return BASE_URL + REGION_CODES[find_region]
 
 
+class FetchError(Exception):
+    """Raised when fetching a URL fails."""
+    pass
+
+
 """
     Fetches HTML content from a URL and returns parsed lxml element.
 
@@ -78,7 +83,10 @@ def build_base_url(region=DEFAULT_REGION):
         url: The URL to fetch
 
     Returns:
-        lxml HTML element or None on failure
+        lxml HTML element
+
+    Raises:
+        FetchError: If the fetch fails (network error, 404, etc.)
 """
 def fetch_html(url):
     try:
@@ -86,5 +94,5 @@ def fetch_html(url):
         response = request.urlopen(req)
         html_content = response.read()
         return html_module.fromstring(html_content)
-    except Exception:
-        return None
+    except Exception as e:
+        raise FetchError(f"Failed to fetch {url}: {e}") from e

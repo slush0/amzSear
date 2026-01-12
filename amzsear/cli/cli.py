@@ -191,7 +191,9 @@ def print_product_json(product, verbose=False):
     """Output product details as JSON."""
     data = {'asin': product.get_asin(), 'product_url': product.product_url}
 
-    if product.details:
+    if product._fetch_error:
+        data['error'] = product._fetch_error
+    elif product.details:
         if verbose:
             data['details'] = product.details.to_dict()
         else:
@@ -211,7 +213,9 @@ def print_product_verbose(product):
     print(f"URL: {product.product_url}")
     print()
 
-    if product.details:
+    if product._fetch_error:
+        print(f"Error: {product._fetch_error}")
+    elif product.details:
         details = product.details
         for key, value in details.items():
             if isinstance(value, dict):
@@ -234,6 +238,10 @@ def print_product_short(product):
     details = product.details
 
     print(f"ASIN:   {asin}")
+
+    if product._fetch_error:
+        print(f"Error: {product._fetch_error}")
+        return
 
     if details:
         title = details.full_title or 'N/A'

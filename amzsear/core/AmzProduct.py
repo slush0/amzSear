@@ -2,7 +2,7 @@ import re
 
 try:
     from amzsear.core.AmzBase import AmzBase
-    from amzsear.core import requires_valid_data, capture_exception, build_url, build_base_url, fetch_html
+    from amzsear.core import requires_valid_data, capture_exception, build_url, build_base_url, fetch_html, FetchError
     from amzsear.core.AmzRating import AmzRating
     from amzsear.core.AmzProductDetails import AmzProductDetails
     from amzsear.core.AmzReviews import AmzReviews
@@ -10,7 +10,7 @@ try:
     from amzsear.core.consts import PRODUCT_URL, REVIEWS_URL, QA_URL, DEFAULT_REGION
 except ImportError:
     from .AmzBase import AmzBase
-    from . import requires_valid_data, capture_exception, build_url, build_base_url, fetch_html
+    from . import requires_valid_data, capture_exception, build_url, build_base_url, fetch_html, FetchError
     from .AmzRating import AmzRating
     from .AmzProductDetails import AmzProductDetails
     from .AmzReviews import AmzReviews
@@ -49,6 +49,7 @@ class AmzProduct(AmzBase):
     subtext = None
     details = None  # AmzProductDetails object (populated by fetch_details)
     reviews = None  # AmzReviews object (populated by fetch_details)
+    _fetch_error = None  # Error message if fetch_details failed
 
     _all_attrs = ['title','product_url','image_url','rating','prices',
         'extra_attributes', 'subtext', 'details', 'reviews']
@@ -183,16 +184,21 @@ class AmzProduct(AmzBase):
         # Level 1: Fetch product page details
         if level.value >= DetailLevel.BASIC.value:
             product_url = PRODUCT_URL % (base_url, asin)
-            html_elem = fetch_html(product_url)
-            if html_elem is not None:
+            try:
+                html_elem = fetch_html(product_url)
                 self.details = AmzProductDetails(html_elem)
+            except FetchError as e:
+                self._fetch_error = str(e)
+                return self
 
         # Level 2: Fetch reviews page
         if level.value >= DetailLevel.REVIEWS.value:
             reviews_url = REVIEWS_URL % (base_url, asin)
-            html_elem = fetch_html(reviews_url)
-            if html_elem is not None:
+            try:
+                html_elem = fetch_html(reviews_url)
                 self.reviews = AmzReviews(html_elem)
+            except FetchError as e:
+                self._fetch_error = str(e)
 
         # Level 3: Q&A would be fetched here (not implemented yet)
         # if level.value >= DetailLevel.FULL.value:
