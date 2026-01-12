@@ -1,60 +1,71 @@
-try:
-    from amzsear import AmzSear, AmzProduct, DetailLevel
-    from amzsear.core.consts import DEFAULT_REGION, REGION_CODES, PRODUCT_URL
-    from amzsear.core import build_base_url
-except ImportError:
-    from .amzsear import AmzSear, AmzProduct, DetailLevel
-    from .amzsear.core.consts import DEFAULT_REGION, REGION_CODES, PRODUCT_URL
-    from .amzsear.core import build_base_url
-
 import argparse
-import webbrowser
 import json
 import sys
+import webbrowser
 
-"""
-"""
+try:
+    from amzsear import AmzSear, AmzProduct, DetailLevel, __version__
+    from amzsear.core.consts import DEFAULT_REGION, REGION_CODES, PRODUCT_URL
+    from amzsear.core import build_base_url, FetchError
+except ImportError:
+    from .. import AmzSear, AmzProduct, DetailLevel, __version__
+    from ..core.consts import DEFAULT_REGION, REGION_CODES, PRODUCT_URL
+    from ..core import build_base_url, FetchError
+
+
 def run(*passed_args):
+    """Main entry point for the CLI."""
     parser = get_parser()
-    args = parser.parse_args(*passed_args) # the parser defaults to sys args if nothing passed
+    args = parser.parse_args(*passed_args)  # the parser defaults to sys args if nothing passed
     args = vars(args)
 
-    # Handle product lookup mode
-    if args.get('asin'):
-        run_product(args)
-        return
+    try:
+        # Handle product lookup mode
+        if args.get('asin'):
+            run_product(args)
+            return
 
-    # Validate: query is required for search mode
-    if not args.get('query'):
-        parser.error('query is required (or use --asin ASIN)')
+        # Validate: query is required for search mode
+        if not args.get('query'):
+            parser.error('query is required (or use --asin ASIN)')
 
-    # Handle search mode
-    amz_args = {x:y for x,y in args.items() if x not in ['select','verbose','json','browser','asin']}
-    out = AmzSear(**amz_args)
+        # Handle search mode
+        amz_args = {x: y for x, y in args.items() if x not in ['select', 'verbose', 'json', 'browser', 'asin']}
+        out = AmzSear(**amz_args)
 
-    if args['select'] != None:
-        # single item selection - accept ASIN or numeric index
-        item_key = args['select']
-        if item_key.isdigit():
-            # Numeric index - get by position
-            prod = out.rget(int(item_key), raise_error=True)
+        if args['select'] is not None:
+            # single item selection - accept ASIN or numeric index
+            item_key = args['select']
+            if item_key.isdigit():
+                # Numeric index - get by position
+                prod = out.rget(int(item_key), raise_error=True)
+            else:
+                # ASIN - get by key
+                prod = out[item_key]
+            out = AmzSear(products=[prod])
+            out._urls = [prod.product_url]
+
+        # handle output
+        if args['json']:
+            print_json(out, verbose=args['verbose'])
+        elif args['verbose']:
+            print_verbose(out)
         else:
-            # ASIN - get by key
-            prod = out[item_key]
-        out = AmzSear(products=[prod])
-        out._urls = [prod.product_url]
+            print_short(out)
 
-    # handle output
-    if args['json']:
-        print_json(out, verbose=args['verbose'])
-    elif args['verbose']:
-        print_verbose(out)
-    else:
-        print_short(out)
+        if args['browser']:
+            for url in out._urls:
+                webbrowser.open(url)
 
-    if args['browser']:
-        for url in out._urls:
-            webbrowser.open(url)
+    except FetchError as e:
+        print(f"Error: {e}", file=sys.stderr)
+        sys.exit(1)
+    except KeyError as e:
+        print(f"Error: Key not found - {e}", file=sys.stderr)
+        sys.exit(1)
+    except IndexError as e:
+        print(f"Error: Index out of range - {e}", file=sys.stderr)
+        sys.exit(1)
 
 
 def run_product(args):
@@ -86,26 +97,31 @@ def run_product(args):
 
 
 def get_parser():
+    """Create and return the argument parser."""
     parser = argparse.ArgumentParser(description='The unofficial Amazon search CLI')
 
     parser.add_argument('query', type=str, nargs='?', default=None,
         help='The query string to be searched')
-    parser.add_argument('-a','--asin', type=str, default=None,
+    parser.add_argument('-a', '--asin', type=str, default=None,
         help='Fetch product details by ASIN instead of searching')
-    parser.add_argument('-p','--page', type=int,
+    parser.add_argument('-p', '--page', type=int,
         help='The page number to be searched (defaults to 1)', default=1)
-    parser.add_argument('-s','--select', type=str,
+    parser.add_argument('-s', '--select', type=str,
         help='Select result by ASIN or numeric index (0-based position)', default=None)
-    parser.add_argument('-r','--region', type=str, choices=REGION_CODES,
+    parser.add_argument('-r', '--region', type=str, choices=REGION_CODES,
         default=DEFAULT_REGION, help='The amazon country/region to be searched')
 
-    parser.add_argument('-b','--browser', action='store_true',
+    parser.add_argument('-b', '--browser', action='store_true',
         help='Open the product page in the default browser')
 
-    parser.add_argument('-v','--verbose', action='store_true',
+    parser.add_argument('-v', '--verbose', action='store_true',
         help='Show full product details instead of summary')
-    parser.add_argument('-j','--json', action='store_true',
+    parser.add_argument('-j', '--json', action='store_true',
         help='Output in JSON format')
+
+    parser.add_argument('-V', '--version', action='version',
+        version=f'amzsear {__version__}',
+        help='Show version number and exit')
 
     return parser
 

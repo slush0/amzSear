@@ -16,30 +16,35 @@ except ImportError:
     from .AmzReviews import AmzReviews
     from .selectors import DetailLevel
     from .consts import PRODUCT_URL, REVIEWS_URL, QA_URL, DEFAULT_REGION
-"""
-    The AmzProduct class extends the AmzBase class and, as such the following
-    attributes are available to be called as an index call or as an attribute:
 
+
+class AmzProduct(AmzBase):
+    """
+    The AmzProduct class extends AmzBase and represents a single Amazon product.
+
+    Attributes:
         title (str): The name of the product.
-        product_url (str) A url directly to the product's Amazon page.
-        image_url (str) A url to the product's default image.
-        rating (AmzRating) An AmzRating object.
-        prices (dict) A dictionary of prices, with the price type as a key and
-          a string for the price value (see get_prices method to get float values).
-        extra_attributes (dict) Any extra information that can be extracted
-          from the product.
-        subtext (list) A list of strings under the title, typically the author's
-          name and/or the date of publication.
+        product_url (str): A url directly to the product's Amazon page.
+        image_url (str): A url to the product's default image.
+        rating (AmzRating): An AmzRating object.
+        prices (dict): A dictionary of prices, with the price type as a key and
+            a string for the price value (see get_prices method to get float values).
+        extra_attributes (dict): Any extra information that can be extracted
+            from the product.
+        subtext (list): A list of strings under the title, typically the author's
+            name and/or the date of publication.
+        details (AmzProductDetails): Detailed product info (populated by fetch_details).
+        reviews (AmzReviews): Product reviews (populated by fetch_details).
 
     This class should usually not be instantiated directly (rather be used in
-    an (AmzSear object) but can be created by passing an HTML element to
-    the constructor. If nothing is passed, an empty AmzProduct object is
-    created.
+    an AmzSear object) but can be created by passing an HTML element to
+    the constructor. If nothing is passed, an empty AmzProduct object is created.
 
-    Optional Args:
-        html_element (LXML root): A root for an HTML tree derived from an element on an Amazon search page.
-"""
-class AmzProduct(AmzBase):
+    Args:
+        html_element (lxml.html.HtmlElement): A root for an HTML tree derived from
+            an element on an Amazon search page.
+        region (str): Amazon region code (default: 'US').
+    """
     title = None
     product_url = None
     image_url = None
@@ -55,24 +60,25 @@ class AmzProduct(AmzBase):
         'extra_attributes', 'subtext', 'details', 'reviews']
 
     def __init__(self, html_element=None, region=DEFAULT_REGION):
+        super().__init__()
         self._region = region
-        if html_element != None:
+        if html_element is not None:
             html_dict = self._get_from_html(html_element)
-            for k,v in html_dict.items():
+            for k, v in html_dict.items():
                 setattr(self, k, v)
             if len(html_dict) > 0:
                 self._is_valid = True
                 # Set _index to ASIN for use as key in AmzSear collection
                 self._index = self.get_asin()
 
-    """
-        Private method - used in to initialise fields from HTML
+    @capture_exception(IndexError, default={})
+    def _get_from_html(self, root):
+        """
+        Parse product data from HTML element.
 
         Returns:
-            dict: A dict of fields with extracted data
-    """
-    @capture_exception(IndexError,default={})
-    def _get_from_html(self, root):
+            dict: A dict of fields with extracted data.
+        """
         d = {}
 
         title_root = [x for x in root.cssselect('a') if len(x.cssselect('h2')) > 0][0]
@@ -90,18 +96,18 @@ class AmzProduct(AmzBase):
         d['prices'] = {}
         price_names = root.cssselect('h3[data-attribute]')
         price_text = root.cssselect('span[class^="a"]')
-        price_text = filter(lambda x: re.match('^[^a-z\-]+$',str(x.text)) and
-            re.search('[\.\,]',str(x.text)) and re.search('\d',str(x.text)), price_text)
+        price_text = filter(lambda x: re.match(r'^[^a-z\-]+$', str(x.text)) and
+            re.search(r'[.,]', str(x.text)) and re.search(r'\d', str(x.text)), price_text)
 
         for i, el in enumerate(price_text):
             if i >= len(price_names):
-                price_key = str(len(d['prices'])) # defaults to a number if no name for price type
+                price_key = str(len(d['prices']))  # defaults to a number if no name for price type
             else:
                 price_key = price_names[i].text
             d['prices'][price_key] = el.text
 
         extras = root.cssselect('div[class="a-fixed-left-grid-inner"] > div > span')
-        extras = [re.sub('\s+',' ', x.text_content().strip()) for x in extras]
+        extras = [re.sub(r'\s+', ' ', x.text_content().strip()) for x in extras]
         d['extra_attributes'] = dict(list(zip(extras,extras[1:]))[::2])
 
         # _index is the ASIN, used as key in AmzSear collection
@@ -111,23 +117,27 @@ class AmzProduct(AmzBase):
         return dict(map(lambda k: (k, d[k].strip() if isinstance(d[k],str) else d[k]), d)) 
 
 
-    """
-        Gets a list of floats from the dictionary of price text. A key can be passed
-        to explicitly specify the prices to select. If the key is None, all prices keys
-        are used.
-
-        Optional Args:
-            key (str or list): A key or list of keys to in the price dictionary.
-
-        Returns:
-            list: List of floats for the subset of price specified.
-    """
     @requires_valid_data(default=[])
     def get_prices(self, key=None):
+        """
+        Get a list of floats from the dictionary of price text.
+
+        A key can be passed to explicitly specify the prices to select.
+        If the key is None, all price keys are used.
+
+        Args:
+            key (str or list): A key or list of keys in the price dictionary.
+
+        Returns:
+            list: Sorted list of floats for the specified prices.
+
+        Raises:
+            KeyError: If a specified key is not found in prices.
+        """
         keys = []
-        if key == None:
+        if key is None:
             keys = self.prices.keys()
-        elif isinstance(key,list):
+        elif isinstance(key, list):
             keys = key
         else:
             keys = [key]
@@ -136,12 +146,20 @@ class AmzProduct(AmzBase):
         for k in keys:
             if k not in self.prices:
                 raise KeyError(k)
-            prices += [re.sub(',','',x) for x in re.findall('[\d.,]+', self.prices[k])]
+            prices += [re.sub(',', '', x) for x in re.findall(r'[\d.,]+', self.prices[k])]
 
-        return sorted(map(float,prices))
+        return sorted(map(float, prices))
         
     def get_asin(self):
-        result = re.search('(?:/|%2F)dp(?:/|%2F)([A-Z0-9]{10})', self.product_url)
+        """
+        Extract the ASIN (Amazon Standard Identification Number) from the product URL.
+
+        Returns:
+            str or None: The 10-character ASIN, or None if not found.
+        """
+        if not self.product_url:
+            return None
+        result = re.search(r'(?:/|%2F)dp(?:/|%2F)([A-Z0-9]{10})', self.product_url)
         if result is not None:
             result = result.group(1)
         return result

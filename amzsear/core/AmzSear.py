@@ -1,5 +1,4 @@
 from lxml import html as html_module
-from lxml.html import clean
 
 try:
     from amzsear.core import build_url, fetch_html
@@ -10,20 +9,14 @@ except ImportError:
     from .consts import DEFAULT_REGION
     from .AmzProduct import AmzProduct
 
-"""
-    The AmzSear object is similar to a Python dict, with each item having a
-    unique index (Amazon search number) to reference each AmzProduct.
-"""
+
 class AmzSear(object):
-    _products = []
-    _indexes = []
-
-    _urls = []
-
     """
-        Whilst it may appear that multiple different arguments can be passed
-        to the constructor this is not the case in terms of outcome. The arguments
-        follow the following hierarchy:
+    The AmzSear object is similar to a Python dict, with each item having a
+    unique index (ASIN) to reference each AmzProduct.
+
+    The constructor accepts arguments in a hierarchy - higher level arguments
+    override lower level ones:
 
         (query, [page], [region])
                    |
@@ -35,30 +28,22 @@ class AmzSear(object):
                    |
               (products)
 
-        That is to say that if arguments are passed at more than one level, the
-        arguments at the highest level will be used to override the arguments passed
-        on other levels. For example, if a url was passed as well as a query, the url
-        would be ignored and generated from the query.
+    Args:
+        query (str): A search query to look up on Amazon.
+        page (int or iterable): The page number(s) of the query (defaults to 1).
+        region (str): The Amazon region/country to search (defaults to US).
+        url (str or iterable): An Amazon search url (not recommended).
+        html (str or iterable): The HTML code from an Amazon search page.
+        html_element (lxml element or iterable): The lxml root generated from HTML.
+        products (list): A list of AmzProducts.
 
-        Optional Args:
-            query (str): A search query to look up on Amazon.
-            page (int*): The page number of the query (defaults to 1).
-            region (str): The Amazon region/country to search. For a list of countries
-              to country code see the [regions table](../regions.md) (defaults to US).
-            url (str*): An Amazon search url (not recommended).
-            html (str*): The HTML code from an Amazon search page (not recommended).
-            html_element (LXML root*): The LXML root generated from the HTML off of an
-              Amazon search page (not recommended).
-            products (list*): A list of AmzProducts.
-
-        Note: All arg types marked with a "*" can be an iterable of that type. In other
-        words, a page can either be an int or a list or range, etc. of ints to be searched.
-        The same is true for url, html, html_elements and products.
-
+    Note: All arg types can be an iterable of that type. For example,
+    page can be an int, list, or range of ints to be searched.
     """
+
     def __init__(self, query=None, page=1, region=DEFAULT_REGION, url=None, html=None, html_element=None, products=None):
         def get_iter(it):
-            if not hasattr(it, '__iter__') or isinstance(it,str):
+            if not hasattr(it, '__iter__') or isinstance(it, str):
                 return [it]
             else:
                 return it
@@ -67,10 +52,10 @@ class AmzSear(object):
         self._indexes = []
         self._urls = []
 
-        if query != None:
+        if query is not None:
             page = get_iter(page)
             url = [build_url(query=query, page_num=p, region=region) for p in page]
-        if url != None:
+        if url is not None:
             url = get_iter(url)
             self._urls = url
             html_element = []
@@ -78,16 +63,16 @@ class AmzSear(object):
                 elem = fetch_html(build_url(u))
                 if elem is not None:
                     html_element.append(elem)
-        if html != None:
+        if html is not None:
             html = get_iter(html)
             html_element = [html_module.fromstring(h) for h in html]
-        if html_element != None:
+        if html_element is not None:
             html_element = get_iter(html_element)
             for html_el in html_element:
                 products = html_el.cssselect('div[data-asin][data-component-type="s-search-result"]')
                 products = [x for x in products if x.cssselect('h2')]
                 products = [AmzProduct(elem, region=region) for elem in products]
-        if products != None:
+        if products is not None:
             products = get_iter(products)
             products = [prod for prod in products if prod.is_valid() and prod._index]
             # Deduplicate by ASIN - keep first occurrence only
@@ -118,60 +103,53 @@ class AmzSear(object):
     def __getitem__(self, key):
         return self.get(key, default=None, raise_error=True)
 
-    """
-        Private Method - Recursively sets the maximum repr width length for
-        products.
-    """
     def _set_repr_max_len(self, val):
+        """Set the maximum repr width length for all products."""
         for product in self:
-            if hasattr(product,'REPR_MAX_LEN'):
+            if hasattr(product, 'REPR_MAX_LEN'):
                 product.REPR_MAX_LEN = val
 
+    def get(self, key, default=None, raise_error=False):
+        """
+        Get the AmzProduct by ASIN.
 
-    """
-        Gets the AmzProduct by index, default is returned if the index is not found or an
-        error is raised if raise_error=True. Indexing the AmzSear object is equivalent to
-        calling this method with raise_error=True.
+        Indexing the AmzSear object is equivalent to calling this method
+        with raise_error=True.
 
         Args:
-            key (str): The index number of the product in the AmzSear object.
-
-        Optional Args:
-            default: The default value, should raise_error=False.
-            raise_error (bool): If True, an error will be raised if the key cannot be found.
+            key (str): The ASIN of the product in the AmzSear object.
+            default: The default value if raise_error=False.
+            raise_error (bool): If True, raises KeyError if the key is not found.
 
         Returns:
             The AmzProduct at the key, otherwise the default value.
-    """
-    def get(self, key, default=None, raise_error=False):
+        """
         key = str(key)
         if key not in self._indexes:
-            if raise_error == True:
-                raise KeyError('The key %s is not a know index' % (repr(key)) ) 
+            if raise_error:
+                raise KeyError(f'The key {repr(key)} is not a known index')
             else:
                 return default
 
         return self._products[self._indexes.index(key)]
 
-    """
-        "Relative get" - Gets the nth key of the the object.
+    def rget(self, key, default=None, raise_error=False):
+        """
+        Relative get - Gets the nth product by position.
 
-        For example, if the index method returns the list ['0', '2', '4', '7'],
-        calling rget with key=1 will return the AmzProduct at index '2', whereas
-        calling rget with key=-1 will return the AmzProduct at index '7'.
+        For example, if indexes are ['ABC', 'DEF', 'GHI', 'JKL'],
+        calling rget(1) returns the product at 'DEF', and
+        rget(-1) returns the product at 'JKL'.
 
         Args:
             key (int): The relative index of the desired product.
-
-        Optional Args:
-            default: The default value, should raise_error=False.
-            raise_error (bool): If True, an error will be raised if the index is out of range.
+            default: The default value if raise_error=False.
+            raise_error (bool): If True, raises IndexError if out of range.
 
         Returns:
             The AmzProduct at the relative index, otherwise the default value.
-    """
-    def rget(self, key, default=None, raise_error=False):
-        if raise_error == True:
+        """
+        if raise_error:
             return self._products[key]
         else:
             try:
@@ -179,23 +157,18 @@ class AmzSear(object):
             except IndexError:
                 return default
 
-
-    """
-        "All get" - gets a list of attributes values from one or more attribute keys.
+    def aget(self, key, default=None, raise_error=False):
+        """
+        All get - Gets attribute values from all products.
 
         Args:
             key (str or list): A single attribute name or a list of attributes.
-
-        Optional Args:
-            default: The default value, should raise_error=False and the attribute
-              name be unavailable for a product.
-            raise_error (bool): If True, an error will be raised if the value of key
-              or any of the values of key are not found.
+            default: The default value if attribute is unavailable.
+            raise_error (bool): If True, raises ValueError if attribute not found.
 
         Returns:
-            list: List of tuples in product order of the AmzSear.
-    """
-    def aget(self, key, default=None, raise_error=False):
+            list: List of tuples containing attribute values in product order.
+        """
         if not isinstance(key, list):
             key = [key]
 
@@ -207,59 +180,59 @@ class AmzSear(object):
             for index, prod in self.items():
                 if hasattr(prod, k):
                     curr_out.append(getattr(prod, k))
-                elif raise_error == True:
-                    raise ValueError('The key %s is not available at index %s' % (repr(k), repr(index)) )
+                elif raise_error:
+                    raise ValueError(f'The key {repr(k)} is not available at index {repr(index)}')
                 else:
                     curr_out.append(default)
 
         return list(zip(*data))
 
-
-    """
-        An iterator yielding a tuple of an index and a AmzProduct for each iteration.
+    def items(self):
+        """
+        Iterate over (index, product) tuples.
 
         Returns:
-            zip: A generator to be iterated over.
-    """
-    def items(self):
+            zip: A generator yielding (ASIN, AmzProduct) tuples.
+        """
         return zip(self._indexes, self._products)
 
-    """
-        A list of all all indexes in the current object.
+    def indexes(self):
+        """
+        Get a list of all indexes (ASINs) in the object.
 
         Returns:
-            list: A list of all the indexes in the object.
-    """
-    def indexes(self):
+            list: A list of all the ASIN indexes.
+        """
         return list(x for x in self)
 
-    """
-        A list of all products in the current object.
+    def products(self):
+        """
+        Get a list of all products in the object.
 
         Returns:
             list: A list of AmzProduct objects.
-    """
-    def products(self):
-        return list(y for x,y in self.items())
+        """
+        return list(y for x, y in self.items())
 
     keys = indexes
     values = products
 
+    def to_dataframe(self, recursive=True, flatten=False):
+        """
+        Convert to a Pandas DataFrame.
 
-    """
-        Pandas must be installed for this method to be called. It will convert the
-        object to a Pandas DataFrame using the same possible recursive and flattening
-        options of the AmzBase to_dict method.
+        Pandas must be installed for this method to be called.
 
-        Optional Args:
-            recursive (bool): See [AmzBase to\_dict](AmzBase.mdto_dict) method.
-            flatten (bool): See [AmzBase to\_dict](AmzBase.mdto_dict) method.
+        Args:
+            recursive (bool): See AmzBase.to_dict method.
+            flatten (bool): See AmzBase.to_dict method.
 
         Returns:
-            Pandas DataFrame: A dataframe with each product in a series with
-            it's index.
-    """
-    def to_dataframe(self, recursive=True, flatten=False):
+            pandas.DataFrame: A dataframe with each product in a row,
+                indexed by ASIN.
+        """
         from pandas import DataFrame
-        return DataFrame([y.to_series(recursive=recursive, flatten=flatten) for x, y in self.items()],
-            index=self._indexes) 
+        return DataFrame(
+            [y.to_series(recursive=recursive, flatten=flatten) for x, y in self.items()],
+            index=self._indexes
+        ) 

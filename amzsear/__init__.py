@@ -1,3 +1,7 @@
+"""amzSear - The unofficial Amazon search CLI & Python API."""
+
+__version__ = '2.0.2'
+
 try:
     from amzsear.core.AmzSear import AmzSear
     from amzsear.core.AmzProduct import AmzProduct
@@ -12,6 +16,7 @@ except ImportError:
     from .core.selectors import DetailLevel
 
 __all__ = [
+    '__version__',
     'AmzSear',
     'AmzProduct',
     'AmzProductDetails',

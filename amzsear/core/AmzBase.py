@@ -2,39 +2,43 @@ try:
     from amzsear.core.consts import REPR_MAX_LEN_DEFAULT
     from amzsear.core import requires_valid_data
 except ImportError:
-    from .amzsear.core.consts import REPR_MAX_LEN_DEFAULT
-    from .amzsear.core import requires_valid_data
+    from .consts import REPR_MAX_LEN_DEFAULT
+    from . import requires_valid_data
 
-"""
-    The AmzBase class can be works similarly to the 'dict' class in Python.
-    However, keys for the class are predefined when in the subclass that
+
+class AmzBase(object):
+    """
+    The AmzBase class works similarly to the 'dict' class in Python.
+    However, keys for the class are predefined in the subclass that
     inherits AmzBase and there is also the potential for validity/invalidity
     to be defined in the object. The keys can also be indexed (as they would
     be for a dict) but can also be accessed as attributes.
 
     Optional Args:
         Any key value pairs passed to the constructor will be set as
-        attributes that can be accessed using an index call or as directly,
+        attributes that can be accessed using an index call or directly
         as an attribute.
-"""
-class AmzBase(object):
-    _is_valid = False
-    _all_attrs = []
+    """
+    _all_attrs = []  # Subclasses should define their own _all_attrs
 
     REPR_MAX_LEN = REPR_MAX_LEN_DEFAULT
 
-    """
-    """
-    def __init__(self,**kws):
+    def __init__(self, **kws):
+        # Initialize instance-level attributes
+        self._is_valid = False
+        # Create instance copy of _all_attrs if subclass defines it as class attr
+        if '_all_attrs' not in self.__dict__:
+            self._all_attrs = list(self.__class__._all_attrs)
         for k, v in kws.items():
-            setattr(self,k,v)
-            self._all_attrs.append(k)
+            setattr(self, k, v)
+            if k not in self._all_attrs:
+                self._all_attrs.append(k)
 
     def __getitem__(self, key):
         return self.get(key, raise_error=True)
 
     def __len__(self):
-        return len([x for x in self])
+        return sum(1 for _ in self)
 
     def __bool__(self):
         return self.is_valid()
@@ -44,7 +48,7 @@ class AmzBase(object):
 
     def __iter__(self):
         for attr_name in self._all_attrs:
-            if getattr(self, attr_name, None) != None:
+            if getattr(self, attr_name, None) is not None:
                 yield attr_name
 
     def __repr__(self):
@@ -67,96 +71,93 @@ class AmzBase(object):
         out_lines = [l if len(l) <= self.REPR_MAX_LEN else l[:(self.REPR_MAX_LEN-3)] + '...' for l in lines]
         return '\n'.join(out_lines)
 
-    """
-        Gets an element by key if available. If the key does not exist an error will be raised
-        if raise_error is True otherwise the default value will be returned.
+    def get(self, key, default=None, raise_error=False):
+        """
+        Get an element by key if available.
+
+        If the key does not exist an error will be raised if raise_error is True,
+        otherwise the default value will be returned.
 
         Args:
             key (str): The key to be accessed in the AmzBase object.
-
-        Optional Args:
             default: A default value to return if the key specified does not exist.
             raise_error (bool): True if an error is to be raised, should the key not exist.
 
         Returns:
             The value of the key or the default value if an error is not raised.
-    """
-    def get(self, key, default=None, raise_error=False):
+        """
         if key not in self:
-            if raise_error == True:
-                raise KeyError('The key %s is not a know attribute' % (repr(key)) )
+            if raise_error:
+                raise KeyError(f'The key {repr(key)} is not a known attribute')
             else:
                 return default
 
-        return getattr(self,key)
+        return getattr(self, key)
 
-    """
-        Similar to dict.items, this method yields a generator with each iteration
-        returning a tuple of an attribute name and the attribute for each element in the object.
-
-        Returns:
-            zip: A generator to be iterated over.
-    """
     @requires_valid_data(default=iter(()))
     def items(self):
+        """
+        Similar to dict.items, yields tuples of (attribute_name, attribute_value).
+
+        Returns:
+            generator: A generator yielding (name, value) tuples.
+        """
         for attr_name in self._all_attrs:
-            if getattr(self, attr_name, None) != None:
-                yield (attr_name, getattr(self,attr_name))
+            if getattr(self, attr_name, None) is not None:
+                yield (attr_name, getattr(self, attr_name))
 
-    """
-    Similar to dict.keys, this method gives a list of the names of all the
-    attributes in the object.
-
-    Returns:
-        list: The names of all the attributes in the object.
-    """
     @requires_valid_data(default=[])
     def keys(self):
+        """
+        Similar to dict.keys, returns list of attribute names.
+
+        Returns:
+            list: The names of all the attributes in the object.
+        """
         return list(x for x in self)
 
-    """
-        Similar to dict.values, this method gives a list of the values of
-        all the attributes in the object.
+    @requires_valid_data(default=[])
+    def values(self):
+        """
+        Similar to dict.values, returns list of attribute values.
 
         Returns:
             list: The values of all the attributes in the object.
-    """
-    @requires_valid_data(default=[])
-    def values(self):
-        return list(y for x,y in self.items())
+        """
+        return list(y for x, y in self.items())
 
-
-    """
-        Gets the validity of the object, as outlined in each object's constructor.
+    def is_valid(self):
+        """
+        Get the validity of the object, as outlined in each object's constructor.
 
         Returns:
             bool: True if the object is valid, otherwise False.
-    """
-    def is_valid(self):
+        """
         return self._is_valid
 
-    """
-        Converts the object to a dict with optionally being able to recurse of to_dict
-        methods for composite AmzBase objects and to place these composite elements at
-        the same level when flatten=True.
+    def to_dict(self, recursive=True, flatten=False):
+        """
+        Convert the object to a dict.
+
+        Optionally recurse into to_dict methods for composite AmzBase objects
+        and place these composite elements at the same level when flatten=True.
 
         Calling dict(cls) will have the same effect as calling
         cls.to_dict(recursive=False, flatten=False).
 
-        Optional Args:
-            recursive (bool): If true any values with a to_dict method will have their
-              method called too, otherwise the value will be the object.
-            flatten (bool): If true recursive calls to to_dict will cause the values to
-              be merged at the top level. Note that recursive must be True for this to have an effect.
+        Args:
+            recursive (bool): If True, any values with a to_dict method will have
+                their method called too, otherwise the value will be the object.
+            flatten (bool): If True, recursive calls to to_dict will cause values
+                to be merged at the top level. Requires recursive=True.
 
-         Returns:
-             dict: A dict of the with attribute names as keys and their values as values.
-    """
-    def to_dict(self, recursive=True, flatten=False):
+        Returns:
+            dict: A dict with attribute names as keys and their values as values.
+        """
         d = {}
         for k, v in self.items():
-            if recursive == True and hasattr(v,'to_dict'):
-                if flatten == True:
+            if recursive and hasattr(v, 'to_dict'):
+                if flatten:
                     d = {**d, **v.to_dict()}
                 else:
                     d[k] = v.to_dict()
@@ -164,19 +165,20 @@ class AmzBase(object):
                 d[k] = v
         return d
 
-    """
-        Pandas must be installed for this method to be called. It will convert
-        the object to a Pandas Series using the same possible recursive and
-        flattening options of the to_dict method above.
+    def to_series(self, recursive=True, flatten=False):
+        """
+        Convert to a Pandas Series.
 
-        Optional Args:
-            recursive (bool): See above.
-            flatten (bool): See above.
+        Pandas must be installed for this method to be called. Uses the same
+        recursive and flattening options as to_dict.
+
+        Args:
+            recursive (bool): See to_dict method.
+            flatten (bool): See to_dict method.
 
         Returns:
-            Pandas DataFrame: A series with attribute names as keys and their values as values.
-    """
-    def to_series(self, recursive=True, flatten=False):
-        #only import at this point as amzSear can be used without pandas if desired
-        from pandas import Series 
-        return Series(self.to_dict(recursive=recursive,flatten=flatten))
+            pandas.Series: A series with attribute names as keys and their values as values.
+        """
+        # Only import at this point as amzSear can be used without pandas if desired
+        from pandas import Series
+        return Series(self.to_dict(recursive=recursive, flatten=flatten))

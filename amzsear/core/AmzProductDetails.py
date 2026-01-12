@@ -54,6 +54,7 @@ class AmzProductDetails(AmzBase):
         Args:
             html_element: lxml HTML element from product page (optional)
         """
+        super().__init__()
         if html_element is not None:
             self._parse_from_html(html_element)
 
